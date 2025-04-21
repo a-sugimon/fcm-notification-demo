@@ -27,7 +27,7 @@
         const permission = await Notification.requestPermission();
         if (permission === "granted") {
           const token = await messaging.getToken({
-            vapidKey: "YOUR_PUBLIC_VAPID_KEY",
+            vapidKey: "BNiT4tuPxxwrW-co91OhdJUuIrBLqggjq-O1IVMdmZMvYOdYY7XSmvWnYFagLMVUrSU9dL798SP_RBFX8z1GIJ4",
           });
           console.log("取得したトークン:", token);
           // このトークンをサーバーに送って通知対象にする
