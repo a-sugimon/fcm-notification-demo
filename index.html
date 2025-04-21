@@ -18,31 +18,29 @@
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
 
-    // サービスワーカーの登録
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/fcm-notification-demo/firebase-messaging-sw.js')
-        .then(function(registration) {
-          console.log('Service Worker registered with scope:', registration.scope);
-        })
-        .catch(function(error) {
-          console.error('Service Worker registration failed:', error);
-        });
-    }
-
     document.getElementById("requestPermission").addEventListener("click", async () => {
       try {
         const permission = await Notification.requestPermission();
         if (permission === "granted") {
-          const token = await getToken(messaging, {
-            vapidKey: "BNiT4tuPxxwrW-co91OhdJUuIrBLqggjq-O1IVMdmZMvYOdYY7XSmvWnYFagLMVUrSU9dL798SP_RBFX8z1GIJ4",
-          });
-          console.log("取得したトークン:", token);
-          // このトークンをサーバーに送って通知対象にする
+          navigator.serviceWorker.register('./firebase-messaging-sw.js')
+            .then((registration) => {
+              return getToken(messaging, {
+                vapidKey: "BNiT4tuPxxwrW-co91OhdJUuIrBLqggjq-O1IVMdmZMvYOdYY7XSmvWnYFagLMVUrSU9dL798SP_RBFX8z1GIJ4",
+                serviceWorkerRegistration: registration
+              });
+            })
+            .then((token) => {
+              console.log("取得したトークン:", token);
+              // このトークンをサーバーに送って通知対象にする
+            })
+            .catch((err) => {
+              console.error("トークンの取得エラー:", err);
+            });
         } else {
           console.warn("通知の許可がされていません");
         }
       } catch (err) {
-        console.error("トークンの取得エラー:", err);
+        console.error("エラー:", err);
       }
     });
 
