@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FCM Sample</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js"></script>
+</head>
+<body>
+  <h1>Push通知テスト</h1>
+  <button id="requestPermission">通知を許可</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const messaging = firebase.messaging();
+
+    document.getElementById("requestPermission").addEventListener("click", async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          const token = await messaging.getToken({
+            vapidKey: "YOUR_PUBLIC_VAPID_KEY",
+          });
+          console.log("取得したトークン:", token);
+          // このトークンをサーバーに送って通知対象にする
+        } else {
+          console.warn("通知の許可がされていません");
+        }
+      } catch (err) {
+        console.error("トークンの取得エラー:", err);
+      }
+    });
+
+    // 通知を受け取る
+    messaging.onMessage((payload) => {
+      console.log("通知受信:", payload);
+      new Notification(payload.notification.title, {
+        body: payload.notification.body,
+        icon: payload.notification.icon,
+      });
+    });
+  </script>
+</body>
+</html>
