@@ -18,8 +18,40 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: payload.notification.icon
+    icon: payload.notification.icon,
+    data: payload.data || {} // データを通知オプションに追加
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// 通知クリック時の処理
+self.addEventListener('notificationclick', (event) => {
+  console.log('Notification clicked:', event.notification);
+  
+  // 通知を閉じる
+  event.notification.close();
+  
+  // data.urlがあればそのURLを開く
+  if (event.notification.data && event.notification.data.url) {
+    const urlToOpen = event.notification.data.url;
+    console.log('Opening URL:', urlToOpen);
+    
+    // クライアントを取得してURLを開く
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((clientList) => {
+        // 既に開いているウィンドウがあれば、そこにフォーカスする
+        for (const client of clientList) {
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        
+        // 新しいウィンドウを開く
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    );
+  }
 });

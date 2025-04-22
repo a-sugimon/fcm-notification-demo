@@ -18,8 +18,48 @@
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
 
+    // デバッグ情報
+    console.log('Current URL:', window.location.href);
+    console.log('Current pathname:', window.location.pathname);
+    console.log('Firebase Config:', firebaseConfig);
+    console.log('Browser:', navigator.userAgent);
+    console.log('Push API available:', 'PushManager' in window);
+    console.log('Service Worker API available:', 'serviceWorker' in navigator);
+    console.log('Notification API available:', 'Notification' in window);
+
+    // ブラウザの互換性チェック
+    function checkBrowserCompatibility() {
+      const issues = [];
+      
+      if (!('serviceWorker' in navigator)) {
+        issues.push('Service Worker API is not supported');
+      }
+      
+      if (!('PushManager' in window)) {
+        issues.push('Push API is not supported');
+      }
+      
+      if (!('Notification' in window)) {
+        issues.push('Notification API is not supported');
+      }
+      
+      // Braveブラウザの検出
+      if (navigator.brave && navigator.brave.isBrave) {
+        issues.push('Brave browser detected. Check privacy settings.');
+      }
+      
+      return issues;
+    }
+
     document.getElementById("requestPermission").addEventListener("click", async () => {
       try {
+        // ブラウザの互換性チェック
+        const compatibilityIssues = checkBrowserCompatibility();
+        if (compatibilityIssues.length > 0) {
+          console.warn('Compatibility issues:', compatibilityIssues);
+          alert('お使いのブラウザでは一部の機能が利用できない可能性があります。\n\n' + compatibilityIssues.join('\n'));
+        }
+        
         const permission = await Notification.requestPermission();
         if (permission === "granted") {
           navigator.serviceWorker.register('./firebase-messaging-sw.js')
@@ -38,19 +78,46 @@
             });
         } else {
           console.warn("通知の許可がされていません");
+          alert("通知の許可が必要です。ブラウザの設定で通知を許可してください。");
         }
       } catch (err) {
         console.error("エラー:", err);
+        console.error("エラーの詳細:", err.message);
+        if (err.stack) {
+          console.error("スタックトレース:", err.stack);
+        }
+        alert("エラーが発生しました: " + err.message);
       }
     });
 
     // 通知を受け取る
     onMessage(messaging, (payload) => {
       console.log("通知受信:", payload);
-      new Notification(payload.notification.title, {
+      
+      // 通知オプションを設定
+      const notificationOptions = {
         body: payload.notification.body,
         icon: payload.notification.icon,
-      });
+        data: payload.data || {} // データを通知オプションに追加
+      };
+      
+      // 通知を表示
+      const notification = new Notification(payload.notification.title, notificationOptions);
+      
+      // 通知クリック時の処理
+      notification.onclick = function(event) {
+        console.log('Notification clicked:', notification);
+        
+        // 通知を閉じる
+        notification.close();
+        
+        // data.urlがあればそのURLを開く
+        if (notification.data && notification.data.url) {
+          const urlToOpen = notification.data.url;
+          console.log('Opening URL:', urlToOpen);
+          window.open(urlToOpen, '_blank');
+        }
+      };
     });
   </script>
 </head>
